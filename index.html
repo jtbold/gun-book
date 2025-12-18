@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Met Museum Firearms Collector</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 {
+            color: #8B0000;
+            border-bottom: 3px solid #8B0000;
+            padding-bottom: 10px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .panel h3 { margin-top: 0; color: #555; }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .step-number {
+            background: #8B0000;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .era-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .era-option {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .era-option:hover {
+            border-color: #8B0000;
+            background: #fff5f5;
+        }
+        .era-option.selected {
+            border-color: #8B0000;
+            background: #8B0000;
+            color: white;
+        }
+        .era-option .era-name { font-weight: bold; font-size: 14px; }
+        .era-option .era-years { font-size: 12px; opacity: 0.8; margin-top: 5px; }
+        
+        .exclude-chips, .include-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .exclude-chip {
+            padding: 8px 14px;
+            background: #ffebee;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .exclude-chip:hover { background: #ffcdd2; }
+        .exclude-chip.active {
+            background: #c62828;
+            color: white;
+        }
+        .include-chip {
+            padding: 8px 14px;
+            background: #e8f5e9;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .include-chip:hover { background: #c8e6c9; }
+        .include-chip.active {
+            background: #2e7d32;
+            color: white;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        .btn-primary { background: #8B0000; color: white; }
+        .btn-primary:hover { background: #6B0000; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-secondary { background: #555; color: white; }
+        .btn-secondary:hover { background: #333; }
+        .btn-green { background: #2e7d32; color: white; }
+        .btn-green:hover { background: #1b5e20; }
+        
+        #progress-panel { display: none; }
+        .progress-bar {
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8B0000, #B22222);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        #progress-text { text-align: center; color: #666; margin-top: 5px; }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .item-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .item-card:hover { transform: translateY(-3px); }
+        .item-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .item-info { padding: 12px; }
+        .item-date { color: #8B0000; font-weight: bold; font-size: 13px; }
+        .item-title { font-size: 13px; margin: 5px 0; line-height: 1.3; }
+        .item-meta { font-size: 11px; color: #888; }
+        .item-actions {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+        }
+        .item-actions a {
+            font-size: 11px;
+            color: #1976d2;
+            text-decoration: none;
+            margin-right: 15px;
+        }
+        
+        #save-location {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        #folder-path {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        
+        #download-panel { display: none; }
+        .download-stats {
+            display: flex;
+            gap: 30px;
+            margin: 15px 0;
+        }
+        .download-stat { text-align: center; }
+        .download-stat-value { font-size: 28px; font-weight: bold; color: #8B0000; }
+        .download-stat-label { font-size: 12px; color: #666; }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 11px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal img { max-width: 95%; max-height: 95%; }
+        .modal-close {
+            position: absolute;
+            top: 20px; right: 30px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+        }
+        
+        .help-text { font-size: 12px; color: #666; margin: 0 0 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔫 Met Museum Firearms Collector</h1>
+    <p style="color:#666; margin-top:-10px;">Search and download public domain firearm images from the Metropolitan Museum of Art</p>
+    
+    <!-- Step 1: Select Era -->
+    <div class="panel">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h3 style="margin:0">Select Era</h3>
+        </div>
+        <div class="era-grid" id="era-selection">
+            <div class="era-option" data-era="1500" data-start="0" data-end="1599">
+                <div class="era-name">Pre-1600</div>
+                <div class="era-years">Before 1600</div>
+            </div>
+            <div class="era-option" data-era="1600" data-start="1600" data-end="1699">
+                <div class="era-name">17th Century</div>
+                <div class="era-years">1600-1699</div>
+            </div>
+            <div class="era-option" data-era="1700" data-start="1700" data-end="1799">
+                <div class="era-name">18th Century</div>
+                <div class="era-years">1700-1799</div>
+            </div>
+            <div class="era-option selected" data-era="1800" data-start="1800" data-end="1849">
+                <div class="era-name">Early 19th C.</div>
+                <div class="era-years">1800-1849</div>
+            </div>
+            <div class="era-option" data-era="1850" data-start="1850" data-end="1899">
+                <div class="era-name">Late 19th C.</div>
+                <div class="era-years">1850-1899</div>
+            </div>
+            <div class="era-option" data-era="1900" data-start="1900" data-end="2100">
+                <div class="era-name">20th Century+</div>
+                <div class="era-years">1900 and later</div>
+            </div>
+            <div class="era-option" data-era="all" data-start="0" data-end="9999">
+                <div class="era-name">All Eras</div>
+                <div class="era-years">Everything</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 2: Include -->
+    <div class="panel">
+        <div class="step">
+            <div class="step-number">2</div>
+            <h3 style="margin:0">Include</h3>
+        </div>
+        <p class="help-text">Click to toggle search terms (green = active):</p>
+        <div class="include-chips">
+            <span class="include-chip active" data-term="double barrel shotgun">Double Barrel Shotgun</span>
+            <span class="include-chip active" data-term="double-barreled shotgun">Double-Barreled Shotgun</span>
+            <span class="include-chip active" data-term="double barrel rifle">Double Barrel Rifle</span>
+            <span class="include-chip active" data-term="fowling piece">Fowling Piece</span>
+            <span class="include-chip" data-term="percussion shotgun">Percussion Shotgun</span>
+            <span class="include-chip" data-term="flintlock shotgun">Flintlock Shotgun</span>
+            <span class="include-chip" data-term="sporting gun">Sporting Gun</span>
+            <span class="include-chip" data-term="hunting rifle">Hunting Rifle</span>
+            <span class="include-chip" data-term="side by side">Side by Side</span>
+            <span class="include-chip" data-term="over under">Over/Under</span>
+        </div>
+    </div>
+    
+    <!-- Step 3: Exclusions -->
+    <div class="panel">
+        <div class="step">
+            <div class="step-number">3</div>
+            <h3 style="margin:0">Exclude</h3>
+        </div>
+        <p class="help-text">Filter out unwanted items (red = excluded):</p>
+        <div class="exclude-chips">
+            <span class="exclude-chip active" data-term="pistol">pistol</span>
+            <span class="exclude-chip active" data-term="revolver">revolver</span>
+            <span class="exclude-chip" data-term="handgun">handgun</span>
+            <span class="exclude-chip" data-term="cannon">cannon</span>
+            <span class="exclude-chip" data-term="sword">sword</span>
+            <span class="exclude-chip" data-term="flask">flask</span>
+            <span class="exclude-chip" data-term="holster">holster</span>
+        </div>
+    </div>
+    
+    <!-- Step 4: Save Location -->
+    <div class="panel">
+        <div class="step">
+            <div class="step-number">4</div>
+            <h3 style="margin:0">Save Location</h3>
+        </div>
+        <p class="help-text">Enter the folder path for the download script:</p>
+        <div id="save-location">
+            <input type="text" id="folder-path" value="C:\Users\YourName\Pictures\MetFirearms" placeholder="Enter save path...">
+        </div>
+    </div>
+    
+    <!-- Step 5: Search -->
+    <div class="panel">
+        <div class="step">
+            <div class="step-number">5</div>
+            <h3 style="margin:0">Search</h3>
+        </div>
+        <button class="btn-primary" onclick="startSearch()" id="searchBtn">🔍 Search Met Museum</button>
+    </div>
+    
+    <!-- Progress -->
+    <div class="panel" id="progress-panel">
+        <h3>Searching...</h3>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div id="progress-text">Starting...</div>
+    </div>
+    
+    <!-- Download Panel -->
+    <div class="panel" id="download-panel">
+        <h3>📥 Download Images</h3>
+        <div class="download-stats">
+            <div class="download-stat">
+                <div class="download-stat-value" id="stat-items">0</div>
+                <div class="download-stat-label">Firearms Found</div>
+            </div>
+            <div class="download-stat">
+                <div class="download-stat-value" id="stat-images">0</div>
+                <div class="download-stat-label">Total Images</div>
+            </div>
+        </div>
+        
+        <button class="btn-primary" onclick="generateWindowsScript()">🪟 Windows PowerShell Script</button>
+        <button class="btn-secondary" onclick="generateBashScript()">🍎 Mac/Linux Script</button>
+        <button class="btn-secondary" onclick="exportURLs()">🔗 Export URLs</button>
+        
+        <div style="margin-top: 15px; position: relative;">
+            <textarea id="output" readonly placeholder="Click a button above to generate content..."></textarea>
+            <button onclick="copyOutput()" class="btn-green" style="position:absolute; top:20px; right:10px; padding:15px 25px; font-size:16px;">
+                📋 COPY
+            </button>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+            <strong>Windows Instructions:</strong>
+            <ol style="margin: 10px 0 0 0; padding-left: 20px; line-height: 1.8;">
+                <li>Click <strong>"Windows PowerShell Script"</strong></li>
+                <li>Click <strong>"COPY"</strong></li>
+                <li>Open <strong>Notepad</strong> → Paste → Save as <strong>download.ps1</strong></li>
+                <li>Right-click the file → <strong>"Run with PowerShell"</strong></li>
+            </ol>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    <div class="panel" id="results-panel" style="display:none;">
+        <h3 id="results-title">Results</h3>
+        <div class="results-grid" id="results"></div>
+    </div>
+    
+    <!-- Modal -->
+    <div class="modal" id="modal" onclick="closeModal()">
+        <span class="modal-close">&times;</span>
+        <img id="modal-img" src="">
+    </div>
+
+    <script>
+        const API_BASE = 'https://collectionapi.metmuseum.org/public/collection/v1';
+        let foundObjects = [];
+
+        // Event listeners
+        document.querySelectorAll('.era-option').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.era-option').forEach(e => e.classList.remove('selected'));
+                el.classList.add('selected');
+            });
+        });
+
+        document.querySelectorAll('.exclude-chip').forEach(el => {
+            el.addEventListener('click', () => el.classList.toggle('active'));
+        });
+
+        document.querySelectorAll('.include-chip').forEach(el => {
+            el.addEventListener('click', () => el.classList.toggle('active'));
+        });
+
+        // Getters
+        function getSelectedEra() {
+            const selected = document.querySelector('.era-option.selected');
+            return {
+                start: parseInt(selected.dataset.start),
+                end: parseInt(selected.dataset.end),
+                name: selected.querySelector('.era-name').textContent
+            };
+        }
+
+        function getExclusions() {
+            return Array.from(document.querySelectorAll('.exclude-chip.active'))
+                .map(el => el.dataset.term.toLowerCase());
+        }
+
+        function getInclusions() {
+            return Array.from(document.querySelectorAll('.include-chip.active'))
+                .map(el => el.dataset.term);
+        }
+
+        // API calls
+        async function searchAPI(term) {
+            const url = `${API_BASE}/search?q=${encodeURIComponent(term)}&hasImages=true`;
+            const res = await fetch(url);
+            const data = await res.json();
+            return data.objectIDs || [];
+        }
+
+        async function getObject(id) {
+            const res = await fetch(`${API_BASE}/objects/${id}`);
+            return await res.json();
+        }
+
+        // Helpers
+        function parseYear(dateStr) {
+            if (!dateStr) return 0;
+            const match = dateStr.match(/(\d{4})/);
+            if (match) return parseInt(match[1]);
+            const centuryMatch = dateStr.match(/(\d+)(?:st|nd|rd|th)\s*century/i);
+            if (centuryMatch) return (parseInt(centuryMatch[1]) - 1) * 100 + 50;
+            return 0;
+        }
+
+        function isRelevantFirearm(obj) {
+            const text = `${obj.title} ${obj.objectName}`.toLowerCase();
+            const inclusions = getInclusions().map(t => t.toLowerCase());
+            const matchesSearch = inclusions.some(term => {
+                const words = term.split(' ');
+                return words.every(word => text.includes(word));
+            });
+            const isGun = ['shotgun', 'rifle', 'fowling', 'gun', 'firearm'].some(w => text.includes(w));
+            return matchesSearch || isGun;
+        }
+
+        function isExcluded(obj) {
+            const exclusions = getExclusions();
+            const text = `${obj.title} ${obj.objectName} ${obj.medium}`.toLowerCase();
+            return exclusions.some(term => text.includes(term));
+        }
+
+        function updateProgress(text, percent) {
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        // Main search
+        async function startSearch() {
+            const era = getSelectedEra();
+            const searchTerms = getInclusions();
+            
+            if (searchTerms.length === 0) {
+                alert('Please select at least one firearm type in Step 2.');
+                return;
+            }
+            
+            document.getElementById('searchBtn').disabled = true;
+            document.getElementById('progress-panel').style.display = 'block';
+            document.getElementById('download-panel').style.display = 'none';
+            document.getElementById('results-panel').style.display = 'none';
+            document.getElementById('results').innerHTML = '';
+            foundObjects = [];
+
+            try {
+                updateProgress('Searching Met Museum...', 5);
+                let allIds = new Set();
+                
+                for (let i = 0; i < searchTerms.length; i++) {
+                    const term = searchTerms[i];
+                    updateProgress(`Searching: "${term}"...`, 5 + (i / searchTerms.length * 15));
+                    const ids = await searchAPI(term);
+                    ids.forEach(id => allIds.add(id));
+                    await sleep(200);
+                }
+                
+                const objectIds = Array.from(allIds);
+                updateProgress(`Found ${objectIds.length} items. Processing...`, 20);
+
+                let totalImages = 0;
+                
+                for (let i = 0; i < objectIds.length; i++) {
+                    try {
+                        const obj = await getObject(objectIds[i]);
+                        
+                        if (obj && obj.primaryImage && obj.isPublicDomain && isRelevantFirearm(obj) && !isExcluded(obj)) {
+                            const year = parseYear(obj.objectDate);
+                            
+                            if (era.start !== 0 || era.end !== 9999) {
+                                if (year !== 0 && (year < era.start || year > era.end)) {
+                                    continue;
+                                }
+                            }
+                            
+                            const imgCount = 1 + (obj.additionalImages?.length || 0);
+                            totalImages += imgCount;
+                            
+                            foundObjects.push({
+                                id: obj.objectID,
+                                title: obj.title,
+                                date: obj.objectDate || 'Unknown',
+                                year: year,
+                                url: obj.objectURL,
+                                primaryImage: obj.primaryImage,
+                                primaryImageSmall: obj.primaryImageSmall,
+                                additionalImages: obj.additionalImages || [],
+                                imageCount: imgCount
+                            });
+                            
+                            addCard(obj);
+                        }
+                    } catch (e) {
+                        console.error(`Error fetching object ${objectIds[i]}:`, e);
+                    }
+                    
+                    const pct = 20 + (i / objectIds.length * 75);
+                    updateProgress(`Processing ${i + 1}/${objectIds.length}...`, pct);
+                    await sleep(50);
+                }
+
+                foundObjects.sort((a, b) => a.year - b.year);
+
+                updateProgress('Complete!', 100);
+                document.getElementById('stat-items').textContent = foundObjects.length;
+                document.getElementById('stat-images').textContent = totalImages;
+                document.getElementById('download-panel').style.display = 'block';
+                document.getElementById('results-panel').style.display = 'block';
+                document.getElementById('results-title').textContent = `${era.name}: ${foundObjects.length} items found`;
+
+            } catch (err) {
+                updateProgress('Error: ' + err.message, 0);
+                alert('Error: ' + err.message);
+            }
+
+            document.getElementById('searchBtn').disabled = false;
+        }
+
+        function addCard(obj) {
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = `
+                <img class="item-image" 
+                     src="${obj.primaryImageSmall || obj.primaryImage}"
+                     onclick="openModal('${obj.primaryImage}')"
+                     onerror="this.style.background='#eee'">
+                <div class="item-info">
+                    <div class="item-date">${obj.objectDate || 'Unknown date'}</div>
+                    <div class="item-title">${obj.title}</div>
+                    <div class="item-meta">${1 + (obj.additionalImages?.length || 0)} images</div>
+                    <div class="item-actions">
+                        <a href="${obj.primaryImage}" target="_blank">📥 Full Size</a>
+                        <a href="${obj.objectURL}" target="_blank">🔗 Met Page</a>
+                    </div>
+                </div>
+            `;
+            document.getElementById('results').appendChild(card);
+        }
+
+        function generateWindowsScript() {
+            const basePath = document.getElementById('folder-path').value.replace(/\//g, '\\');
+            const era = getSelectedEra();
+            
+            let script = '# Met Museum Firearms - ' + era.name + '\n';
+            script += '# Save as: download.ps1\n';
+            script += '# Run: Right-click → "Run with PowerShell"\n\n';
+            script += '$BaseDir = "' + basePath + '"\n';
+            script += 'New-Item -ItemType Directory -Force -Path $BaseDir | Out-Null\n';
+            script += 'Set-Location $BaseDir\n';
+            script += '$ProgressPreference = "SilentlyContinue"\n\n';
+
+            foundObjects.forEach((obj, idx) => {
+                const safeName = `${obj.id}_${obj.title.substring(0, 30).replace(/[^a-z0-9]/gi, '_')}`;
+                script += `# ${idx + 1}. ${obj.title} (${obj.date})\n`;
+                script += `$folder = "${safeName}"\n`;
+                script += 'New-Item -ItemType Directory -Force -Path $folder | Out-Null\n';
+                script += `Invoke-WebRequest -Uri "${obj.primaryImage}" -OutFile "$folder\\main.jpg"\n`;
+                
+                obj.additionalImages.forEach((url, i) => {
+                    script += `Invoke-WebRequest -Uri "${url}" -OutFile "$folder\\view_${i + 1}.jpg"\n`;
+                });
+                script += `Write-Host "Downloaded ${idx + 1}/${foundObjects.length}: ${safeName}"\n\n`;
+            });
+
+            script += 'Write-Host ""\n';
+            script += 'Write-Host "Download complete! ' + foundObjects.length + ' items saved to: $BaseDir"\n';
+            script += 'Write-Host "Press any key to close..."\n';
+            script += '$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")\n';
+            
+            document.getElementById('output').value = script;
+        }
+
+        function generateBashScript() {
+            const basePath = document.getElementById('folder-path').value;
+            const era = getSelectedEra();
+            
+            let script = '#!/bin/bash\n';
+            script += `# Met Museum Firearms - ${era.name}\n`;
+            script += '# Run: bash download.sh\n\n';
+            script += `BASE_DIR="${basePath}"\n`;
+            script += 'mkdir -p "$BASE_DIR"\n';
+            script += 'cd "$BASE_DIR"\n\n';
+
+            foundObjects.forEach((obj, idx) => {
+                const safeName = `${obj.id}_${obj.title.substring(0, 30).replace(/[^a-z0-9]/gi, '_')}`;
+                script += `# ${idx + 1}. ${obj.title} (${obj.date})\n`;
+                script += `mkdir -p "${safeName}"\n`;
+                script += `curl -s -o "${safeName}/main.jpg" "${obj.primaryImage}"\n`;
+                
+                obj.additionalImages.forEach((url, i) => {
+                    script += `curl -s -o "${safeName}/view_${i + 1}.jpg" "${url}"\n`;
+                });
+                script += `echo "Downloaded ${idx + 1}/${foundObjects.length}"\n\n`;
+            });
+
+            script += 'echo "Download complete!"\n';
+            document.getElementById('output').value = script;
+        }
+
+        function exportURLs() {
+            let text = '# Met Museum Firearms - Public Domain (CC0)\n\n';
+
+            foundObjects.forEach(obj => {
+                text += `# ${obj.title} (${obj.date})\n`;
+                text += `# ${obj.url}\n`;
+                text += obj.primaryImage + '\n';
+                obj.additionalImages.forEach(url => text += url + '\n');
+                text += '\n';
+            });
+
+            document.getElementById('output').value = text;
+        }
+
+        function copyOutput() {
+            const ta = document.getElementById('output');
+            ta.select();
+            ta.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(ta.value);
+            alert('Copied to clipboard!');
+        }
+
+        function openModal(url) {
+            document.getElementById('modal-img').src = url;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>
